@@ -16,6 +16,69 @@ void PrintUsage(const wchar_t *ProgramName)
 	std::wcout << L"Usage: " << Filename << Extension << L" filein fileout" << std::endl;
 }
 
+bool WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
+{
+	std::ifstream in(fileIn, std::ios::binary);
+	std::ofstream out(fileOut, std::ios::trunc);
+
+	// test input file
+	if (in.fail())
+	{
+		std::wcout << L"Failed to open input file." << std::endl;
+		return false;
+	}
+	// test output file
+	else if (out.fail())
+	{
+		std::wcout << L"Failed to open output file." << std::endl;
+		return false;
+	}
+
+	// start array declaration
+	out << "unsigned char DATA[] =" << std::endl;
+	out << "{" << std::endl;
+	out << "\t";
+
+	// string buffer (char)
+	std::stringstream ss;
+
+	// data format (0xFF)
+	ss << std::hex << std::uppercase << std::setfill('0');
+
+	char* separator = "";
+	int col = 0;
+
+	auto it = std::istreambuf_iterator<char>(in);
+	auto eof = std::istreambuf_iterator<char>();
+	while (!it.equal(eof))
+	{
+		unsigned int c = *it++ & 0xFF;
+		ss << separator << "0x" << std::setw(2) << c;
+		separator = ", ";
+
+		// finish a row
+		if (++col % 16 == 0)
+		{
+			// checks if is the last character
+			if (it != eof)
+			{
+				ss << "," << std::endl;
+				ss << "\t";
+				separator = "";
+			}
+		}
+	}
+
+	// write formatted array
+	out << ss.str();
+
+	// finish array declaration
+	out << std::endl;
+	out << "};" << std::endl;
+
+	return true;
+}
+
 int wmain(int argc, wchar_t *argv[])
 {
 	std::locale::global(std::locale("en-US"));
@@ -29,6 +92,12 @@ int wmain(int argc, wchar_t *argv[])
 		return 0;
 	}
 
-	return 0;
+	// Convert binary data to a hex array
+	if (WriteToFile(argv[1], argv[2]))
+	{
+		return 0;
+	}
+
+	return 1;
 }
 
