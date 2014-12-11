@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "SimpleOpt.h"
 
 void PrintUsage(const wchar_t *ProgramName)
 {
@@ -13,7 +14,7 @@ void PrintUsage(const wchar_t *ProgramName)
 		_wsplitpath_s(ProgramName, NULL, 0, NULL, 0, Filename, _MAX_FNAME, Extension, _MAX_EXT);
 	}
 
-	std::wcout << L"Usage: " << Filename << Extension << L" filein fileout" << std::endl;
+	std::wcout << L"Usage: " << Filename << Extension << L" FileIn FileOut" << std::endl;
 }
 
 size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
@@ -79,25 +80,88 @@ size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 	return static_cast<size_t>(in.tellg());
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+// TODO: change this variables location later
+wchar_t *FileIn, *FileOut;
+
+enum Commands
+{
+	OPT_HELP
+};
+
+bool ParseCommand(int argc, wchar_t *argv[])
+{
+	// Command line options
+	CSimpleOpt::SOption options[] =
+	{
+		{ OPT_HELP, L"-h", SO_NONE },				// "-h"
+		{ OPT_HELP, L"-?", SO_NONE },				// "-?"
+		SO_END_OF_OPTIONS							// END
+	};
+
+	CSimpleOpt args(argc, argv, options);
+
+	// parse custom options
+	while (args.Next())
+	{
+		// invalid options
+		if (args.LastError() != SO_SUCCESS)
+		{
+			std::wcout << L"Invalid option: " << args.OptionText() << std::endl;
+			return false;
+		}
+
+		// valid options
+		switch (args.OptionId())
+		{
+		case OPT_HELP:	// help
+		{
+			// print usage information
+			PrintUsage(argv[0]);
+			return false;
+		}
+		}
+	}
+
+	// require two files
+	if (args.FileCount() != 2)
+	{
+		PrintUsage(argv[0]);
+		return false;
+	}
+
+	// everything OK
+	FileIn = args.File(0);
+	FileOut = args.File(1);
+
+	return true;
+}
+
 int wmain(int argc, wchar_t *argv[])
 {
 	std::locale::global(std::locale("en-US"));
 
 	std::wcout << L"Copyright (c) 2014 Rafael Cossovan de França" << std::endl << std::endl;
 
-	// Print usage information
-	if (argc != 3)
+	// process command line
+	if (ParseCommand(argc, argv))
 	{
-		PrintUsage(argv[0]);
-		return 0;
-	}
+		// left alignment
+		std::wcout << std::left;
 
-	// Convert binary data to a hex array
-	size_t bytes = WriteToFile(argv[1], argv[2]);
-	if (bytes != -1)
-	{
-		std::wcout << "Successfully converted " << bytes << " bytes" << std::endl;
-		return 0;
+		// command line information
+		std::wcout << std::setw(10) << L"Input: " << FileIn << std::endl;
+		std::wcout << std::setw(10) << L"Output: " << FileOut << std::endl;
+		std::wcout << std::endl;
+
+		// Convert binary data to a hex array
+		size_t bytes = WriteToFile(FileIn, FileOut);
+		if (bytes != -1)
+		{
+			std::wcout << "Successfully converted " << bytes << " bytes" << std::endl;
+			return 0;
+		}
 	}
 
 	return 1;
