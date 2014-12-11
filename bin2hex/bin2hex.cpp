@@ -16,14 +16,14 @@ void PrintUsage(const wchar_t *ProgramName)
 	std::wcout << L"Usage: " << Filename << Extension << L" filein fileout" << std::endl;
 }
 
-bool WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
+size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 {
 	// test input file
 	std::ifstream in(fileIn, std::ios::binary);
 	if (in.fail())
 	{
 		std::wcout << L"Failed to open input file." << std::endl;
-		return false;
+		return -1;
 	}
 
 	// test output file
@@ -31,7 +31,7 @@ bool WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 	if (out.fail())
 	{
 		std::wcout << L"Failed to open output file." << std::endl;
-		return false;
+		return -1;
 	}
 
 	// start array declaration
@@ -76,7 +76,7 @@ bool WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 	out << std::endl;
 	out << "};" << std::endl;
 
-	return true;
+	return static_cast<size_t>(in.tellg());
 }
 
 int wmain(int argc, wchar_t *argv[])
@@ -93,8 +93,10 @@ int wmain(int argc, wchar_t *argv[])
 	}
 
 	// Convert binary data to a hex array
-	if (WriteToFile(argv[1], argv[2]))
+	size_t bytes = WriteToFile(argv[1], argv[2]);
+	if (bytes != -1)
 	{
+		std::wcout << "Successfully converted " << bytes << " bytes" << std::endl;
 		return 0;
 	}
 
