@@ -14,10 +14,10 @@ void PrintUsage(const wchar_t *ProgramName)
 		_wsplitpath_s(ProgramName, NULL, 0, NULL, 0, Filename, _MAX_FNAME, Extension, _MAX_EXT);
 	}
 
-	std::wcout << L"Usage: " << Filename << Extension << L" FileIn FileOut" << std::endl;
+	std::wcout << L"Usage: " << Filename << Extension << L" -v VarName FileIn FileOut" << std::endl;
 }
 
-size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
+size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut, const char* VarName)
 {
 	// test input file
 	std::ifstream in(fileIn, std::ios::binary);
@@ -36,7 +36,7 @@ size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 	}
 
 	// start array declaration
-	out << "unsigned char DATA[] =" << std::endl;
+	out << "unsigned char " << VarName << "[] =" << std::endl;
 	out << "{" << std::endl;
 	out << "\t";
 
@@ -84,9 +84,11 @@ size_t WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 
 // TODO: change this variables location later
 wchar_t *FileIn, *FileOut;
+char VarName[31];
 
 enum Commands
 {
+	OPT_NAME,
 	OPT_HELP
 };
 
@@ -96,6 +98,7 @@ bool ParseCommand(int argc, wchar_t *argv[])
 	CSimpleOpt::SOption options[] =
 	{
 		{ OPT_HELP, L"-h", SO_NONE },				// "-h"
+		{ OPT_NAME, L"-v", SO_REQ_SEP },			// "-v NAME"
 		{ OPT_HELP, L"-?", SO_NONE },				// "-?"
 		SO_END_OF_OPTIONS							// END
 	};
@@ -115,6 +118,16 @@ bool ParseCommand(int argc, wchar_t *argv[])
 		// valid options
 		switch (args.OptionId())
 		{
+		case OPT_NAME:	// variable name
+		{
+			size_t c;
+			if (wcstombs_s(&c, VarName, args.OptionArg(), _TRUNCATE) != 0)
+			{
+				std::wcout << L"Invalid argument value: " << args.OptionText() << std::endl;
+				return false;
+			}
+			break;
+		}
 		case OPT_HELP:	// help
 		{
 			// print usage information
@@ -151,12 +164,13 @@ int wmain(int argc, wchar_t *argv[])
 		std::wcout << std::left;
 
 		// command line information
+		std::wcout << std::setw(10) << L"VarName: " << VarName << std::endl;
 		std::wcout << std::setw(10) << L"Input: " << FileIn << std::endl;
 		std::wcout << std::setw(10) << L"Output: " << FileOut << std::endl;
 		std::wcout << std::endl;
 
 		// Convert binary data to a hex array
-		size_t bytes = WriteToFile(FileIn, FileOut);
+		size_t bytes = WriteToFile(FileIn, FileOut, VarName);
 		if (bytes != -1)
 		{
 			std::wcout << "Successfully converted " << bytes << " bytes" << std::endl;
