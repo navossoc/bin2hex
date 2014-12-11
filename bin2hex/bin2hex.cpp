@@ -18,17 +18,17 @@ void PrintUsage(const wchar_t *ProgramName)
 
 bool WriteToFile(const wchar_t *fileIn, const wchar_t *fileOut)
 {
-	std::ifstream in(fileIn, std::ios::binary);
-	std::ofstream out(fileOut, std::ios::trunc);
-
 	// test input file
+	std::ifstream in(fileIn, std::ios::binary);
 	if (in.fail())
 	{
 		std::wcout << L"Failed to open input file." << std::endl;
 		return false;
 	}
+
 	// test output file
-	else if (out.fail())
+	std::ofstream out(fileOut, std::ios::trunc);
+	if (out.fail())
 	{
 		std::wcout << L"Failed to open output file." << std::endl;
 		return false;
